@@ -14,9 +14,9 @@ export default function Counter() {
         <Button onClick={decrement} aria-label="Decrement"> -</Button>
         
 
-        <span className="count">{count}</span>
+        <h1 className="count">{count}</h1>
         
-        <Button onClick={increment} aria-label="Increment"> +</Button>
+        <Button onClick={increment}  aria-label="Increment"> +</Button>
       </div>
       <Button onClick={reset} className="reset-btn"> Reset</Button>
      

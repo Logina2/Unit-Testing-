@@ -2,11 +2,10 @@ import "./Button.css";
 export default function Button({
   children,
   onClick,
-  className = "",
-  ariaLabel = "button",
+  ...restProps
 }) {
   return (
-    <button onClick={onClick} className={className} aria-label={ariaLabel}>
+    <button onClick={onClick}  {...restProps}>
       {children}
     </button>
   );
