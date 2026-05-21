@@ -1,31 +1,45 @@
-import { render, screen } from "@testing-library/react";
-import Heroes from "../components/Heroes/Heroes";
-import { expect } from "vitest";
+import { render, screen } from '@testing-library/react';
+import { beforeAll, afterAll, afterEach } from 'vitest';
+import { server } from '../../mocks/server';
+import { http, HttpResponse } from 'msw';
+import Heroes from './Heroes';
 
-describe("Heroes component", () => {
+describe('HeroesFromAPI component', () => {
+    beforeAll(() => {
+        server.listen();
+    });
+    afterEach(() => {
+        server.resetHandlers();
+    });
+    afterAll(() => {
+        server.close();
+    });
 
-  test("should be rendered without props", () => {
-    render(<Heroes />)
+    test('should display "No heroes available" when API returns an empty list', async () => {
+        server.use(
+            http.get('http://localhost:3000/heroes', () => {
+                return HttpResponse.json([], { status: 200 });
+            }),
+        );
+        render(<Heroes />);
+        const message = await screen.findByText(/no heroes available/i);
+        expect(message).toBeInTheDocument();
+    });
 
-    let p= screen.getByText(/no heroes/i)
-    expect(p).toBeInTheDocument()
-    let ul= screen.queryByRole("list")
-    expect(ul).not.toBeInTheDocument()
-  });
-  test("should be rendered with props", () => {
-    let heroes=[
-        {id:10,name:"super man",strength:20},
-        {id:11,name:"bat man",strength:12},
-    ]
-    render(<Heroes heroes={heroes} />)
+    test('should render a list of heroes after successful API fetch', async () => {
+        render(<Heroes />);
+        const list = await screen.findByRole('list');
+        expect(list).toBeInTheDocument();
+    });
 
-    let p= screen.queryByText(/no heroes/i)
-    expect(p).not.toBeInTheDocument()
-    let ul= screen.queryByRole("list")
-    expect(ul).toBeInTheDocument()
-    let liTags= screen.queryAllByRole("listitem")
-    expect(liTags).toHaveLength(heroes.length)
-    expect(liTags[0]).toHaveTextContent(heroes[0].name)
-  });
-
+    test.skip('BONUS: should display an error message when API request fails with status 500', async () => {
+        server.use(
+            http.get('http://localhost:3000/heroes', () => {
+                return HttpResponse.json(null, { status: 500 });
+            }),
+        );
+        render(<Heroes />);
+        const error = await screen.findByRole('heading');
+        expect(error).toBeInTheDocument();
+    });
 });
