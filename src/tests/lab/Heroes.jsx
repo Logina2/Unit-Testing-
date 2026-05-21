@@ -1,33 +1,40 @@
-import  { useEffect, useState } from 'react';
-import axios from 'axios';
-import "../../components/Heroes/Heroes.css"
-import calculateHeroStrengthPower from "../../utils/heroStrength"
+import { render, screen, waitFor } from "@testing-library/react";
+import axios from "axios";
+import HeroesFromAPI from "../tests/lab/Heroes";
 
-export default function HeroesFromAPI(){
+import { vi } from "vitest";
 
-     const [heroes, setHeroes] = useState('');
-  const [ error, setError] = useState('');
+vi.mock("axios");
 
-  useEffect(() => {
-    const fetchHeroes = async () => {
-      try {
-        const response = await axios.get('http://localhost:3000/heroes');
-        setHeroes(response.data);
-      } catch {
-        setError('Failed to fetch heroes');
-      }
-    };
-    fetchHeroes();
-  }, []);
+test('should display "No heroes available" when API returns empty list', async () => {
+  axios.get.mockResolvedValue({ data: [] });
 
-    if (error) return <h1>{error}</h1>;
-    if (!heroes || heroes.length==0) return <p>No heroes available</p>
+  render(<Heroes />);
 
-    return(
-        <ul className='hero-list' >
-            {heroes.map(hero=>(
-              <li key={hero.id}> {hero.name}: power={calculateHeroStrengthPower(hero.strength)} </li>
-            ))}
-        </ul>
-    )
-}
+  expect(await screen.findByText("No heroes available")).toBeInTheDocument();
+});
+
+test("should render heroes after API fetch", async () => {
+  axios.get.mockResolvedValue({
+    data: [
+      { id: 10, name: "super man", strength: 20 },
+      { id: 11, name: "bat man", strength: 12 },
+    ],
+  });
+
+  render(<Heroes />);
+
+  await waitFor(() => {
+    expect(screen.getByText(/super man/)).toBeInTheDocument();
+    expect(screen.getByText(/bat man/)).toBeInTheDocument();
+  });
+});
+
+
+test("should show error message on API failure", async () => {
+  axios.get.mockRejectedValue(new Error("500"));
+
+  render(<Heroes />);
+
+  expect(await screen.findByText("Failed to fetch heroes")).toBeInTheDocument();
+});
